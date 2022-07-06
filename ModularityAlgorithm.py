@@ -4,64 +4,37 @@ import json
 from collections.abc import Iterable
 import numpy as np
 import time
+import tkinter as tk
+
+from tkinter import ttk
 
 
 
 #lines 10 - 30 run before main to set global variables 
 
 
-#loads json data from specified file
-#change file name 
-file = open('/Users/adam/Desktop/mydata/117.json', "r")
 
-
-#data is a list of dictionary objects that store bill data
-data = json.loads(file.read())
-file.close()
-
-
-#Removes the house bills so I am only looking at the senate (lines 14 - 27)
-unwanted = []
-for bill in data:
-
-
-#when analyzing the house use "== 'Senate'" otherwise use "== 'House'"
-    if (bill['originChamber'] == 'House'):
-        unwanted.append(bill)
-
-
-
-for i in range(len(unwanted)):
-    data.remove(unwanted[i])
 
 #creates nodes object and chamber is added after since it is hard to add that atribute at this scope 
 def makeObj(obj):
     return {'name': obj["name"], 'state' :obj["state"]}
 
-#this function returns the first n elements of a given array
-def newPartHelper(array, n):
-    newArray = []
-    for i in range(len(array)):
-        if (i == n):
-            break
-        newArray.append(array[i])
-    return newArray
+
 
 
 def Modularity(G):
 
     #this list will contain each unique cluster ID after the for loop
-    Clusters = []
+    Clusters = {}
     for i in range(len(G.nodes())):
-        if (not(G.nodes()[i]['cluster'] in Clusters)):
-            Clusters.append(G.nodes()[i]['cluster'])
+        Clusters[G.nodes()[i]['cluster']] = 1
 
 
 #this dictionary will map cluster ID to a list of node IDs in the cluster
     NodePartition = {}
 
 
-    for num in Clusters:
+    for num in Clusters.keys():
         NodePartition[num] = []
 
     for node in G.nodes():
@@ -89,7 +62,9 @@ class getPermData:
         self.data = []
 
     def addData(self, point):
-        self.data.append(point)
+
+        if not (point in self.data):
+            self.data.append(point)
 
     def iterate(self,obj,  index):
 
@@ -116,15 +91,7 @@ class getPermData:
 
         else:
 
-        
-            arrayAppend = []
-            
-            for i in range(len(index)):
-                arrayAppend.append(index[i])
-                
-                
-           
-            self.addData(arrayAppend)
+            self.addData(index.copy())
 
             
 
@@ -134,14 +101,15 @@ class getPermData:
     
     def permutations(self, numClusters, numNodes):
         # creates a list (numClusters by numClusters by numClusters ... (numNodes times) in numNodes dimesnions where each element is a 0
-        shape = []
+        shape = [numClusters] * numNodes
 
-        for i in range(numNodes):
-            shape.append(numClusters)
-        shape = tuple(shape)
+        
 
         array = np.zeros(shape)
-        array = list(array)
+
+        
+        
+        
 
         
 
@@ -151,8 +119,7 @@ class getPermData:
         
 
         #these lines create every permutation of the clusters the considered nodes could be and appends them to out
-        index = []
-        out = []
+        
         self.iterate(array,[])
         
             
@@ -165,22 +132,25 @@ class getPermData:
           
           
 
-def GetNewPartitions(G, n, R, D, I):
+def GetNewPartitions(G, n, R, D, I, baseline):
     H = G
 
     #each array stores the nth lowest clustering coef node from each party cluster
-    FromR = newPartHelper(R,n)
-    FromD = newPartHelper(D,n)
-    FromI = newPartHelper(I,n)
+
+    
+    FromR = R[:min(n, len(R))]
+    FromD = D[:min(n, len(D))]
+    FromI = I[:min(n, len(I))]
+
+    Baseline = baseline
 
     AllNodes = FromR + FromD + FromI
-    Baseline = Modularity(G)
     
-    maxClust = 0
+    maxClust = 2+len(AllNodes)
     BestPartition = G
     for i in range(len(AllNodes)):
         H.nodes()[AllNodes[i]]["cluster"] = 3 + i
-        maxClust = 3 + i
+        
         
 
    
@@ -189,10 +159,16 @@ def GetNewPartitions(G, n, R, D, I):
 
     Permutations = objectiv.getData()
 
+    
+
    
         
     for posib in Permutations:
+        
+        
         countter = 0
+
+        
         for i in AllNodes:
             H.nodes()[i]["cluster"] = posib[countter]
             countter = countter + 1
@@ -205,16 +181,6 @@ def GetNewPartitions(G, n, R, D, I):
             BestPartition = H
 
             H = G
-
-
-
-
-
-
-
-
-
-
 
 
     return(Baseline)
@@ -309,7 +275,7 @@ def findNode(node, arr):
     return -1
     
 
-def makeEdges(G):
+def makeEdges(G, data):
 
 #loops through bills
     for bill in data:
@@ -355,7 +321,7 @@ def makeEdges(G):
     print('done making edges')
 
 
-def makePartyClusters(G, R, D, I):
+def makePartyClusters(G, R, D, I, data):
     party = {}
 
     
@@ -403,7 +369,37 @@ def makePartyClusters(G, R, D, I):
         
     print("done partitioning by party")
 
-def main():
+
+
+def run(file, n, senate):
+
+    print(file)
+       #loads json data from specified file
+#change file name 
+    file = open('mydata/' + file + '.json', "r")
+
+
+    
+
+
+#data is a list of dictionary objects that store bill data
+    data = json.loads(file.read())
+    file.close()
+
+
+#Removes the house bills so I am only looking at the senate (lines 14 - 27)
+    unwanted = []
+    for bill in data:
+
+
+#when analyzing the house use "== 'Senate'" otherwise use "== 'House'"
+        if (bill['originChamber'] == senate):
+            unwanted.append(bill)
+
+
+
+    for i in range(len(unwanted)):
+        data.remove(unwanted[i])
     
     
     
@@ -472,7 +468,7 @@ def main():
     G.add_nodes_from(makeTupleList(nodes))
 
     #edges are added to G
-    makeEdges(G)
+    makeEdges(G, data)
 
     start = time.time()
 
@@ -489,7 +485,7 @@ def main():
 
 
 #populates Rep, Dem and Indep with appropriate node indexes
-    makePartyClusters(G, Rep, Dem, Indep)
+    makePartyClusters(G, Rep, Dem, Indep, data)
 
 
         
@@ -526,13 +522,66 @@ def main():
     
 
     print('running alg')
-    ModNow = GetNewPartitions(G,1, Rep, Dem, Indep)
+    ModNow = GetNewPartitions(G,n, Rep, Dem, Indep, atFirst)
 
     end = time.time()
 
     print(((ModNow/atFirst) - 1)*100)
     print(end-start)
 
+
+
+
+
+
+ 
+
+def main():
+
+    window = tk.Tk()
+
+    window.geometry("200x200")
+
+
+    
+
+
+    fileOptions = ["start", "108", "109", "110", "111", "112", "113", "114", "115", "116", "117"]
+
+    
+
+    clicked = tk.StringVar()
+
+    
+
+    clicked.set("start")
+
+    def prt():
+        
+
+        run(str(clicked.get()), 1, "Senate")
+        
+
+    drop = tk.OptionMenu(window, clicked, *fileOptions)
+    drop.pack()
+
+    label = tk.Label(window, text = " ")
+    label.pack()
+
+    button = tk.Button(window, text = "Current House #", command = (prt)).pack()
+
+    window.mainloop()
+
+    
+
+    
+
+ 
+
+
+ 
+
+ 
     
     
    
