@@ -546,7 +546,7 @@ def main():
     
 
 
-    fileOptions = ["start", "108", "109", "110", "111", "112", "113", "114", "115", "116", "117"]
+    fileOptions = ["108", "109", "110", "111", "112", "113", "114", "115", "116", "117"]
 
     
 
@@ -554,12 +554,12 @@ def main():
 
     
 
-    clicked.set("start")
+    clicked.set("108")
 
     def prt():
         
 
-        run(str(clicked.get()), 1, "Senate")
+        run(str(clicked.get()), 1, "House")
         
 
     drop = tk.OptionMenu(window, clicked, *fileOptions)
@@ -568,7 +568,7 @@ def main():
     label = tk.Label(window, text = " ")
     label.pack()
 
-    button = tk.Button(window, text = "Current House #", command = (prt)).pack()
+    button = tk.Button(window, text = "Run Code", command = (prt)).pack()
 
     window.mainloop()
 
