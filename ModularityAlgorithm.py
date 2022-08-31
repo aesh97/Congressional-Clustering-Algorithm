@@ -5,76 +5,46 @@ from collections.abc import Iterable
 import numpy as np
 import time
 import tkinter as tk
-
 from tkinter import ttk
 
-
-
 #lines 10 - 30 run before main to set global variables 
-
-
-
 
 #creates nodes object and chamber is added after since it is hard to add that atribute at this scope 
 def makeObj(obj):
     return {'name': obj["name"], 'state' :obj["state"]}
 
-
-
-
 def Modularity(G):
-
     #this list will contain each unique cluster ID after the for loop
     Clusters = {}
     for i in range(len(G.nodes())):
         Clusters[G.nodes()[i]['cluster']] = 1
-
-
 #this dictionary will map cluster ID to a list of node IDs in the cluster
     NodePartition = {}
-
-
     for num in Clusters.keys():
         NodePartition[num] = []
-
     for node in G.nodes():
         NodePartition[G.nodes()[node]['cluster']].append(node)
 
 #this is the iterable we will feed into the modularity function
     NodeList = []
-
-
     for key in NodePartition:
         AddArr = []
         for number in NodePartition[key]:
             AddArr.append(number)
-
         NodeList.append(AddArr)
-
     return(nx_comm.modularity(G, NodeList, weight = 'weight'))
-
 class getPermData:
     def __init__(self, numNode, numClusters):
-        
         self.numNode = numNode
         self.numClusters = numClusters
 
         self.data = []
 
     def addData(self, point):
-
         if not (point in self.data):
             self.data.append(point)
-
     def iterate(self,obj,  index):
 
-   
-        
-
-    
-
-   
-    
         newindex = index
 
         counter = 0
@@ -84,7 +54,6 @@ class getPermData:
             for node in obj:
                 newindex.append(counter)
 
-            
                 self.iterate(node, newindex)
                 newindex.remove(counter)
                 counter = counter + 1
@@ -92,89 +61,47 @@ class getPermData:
         else:
 
             self.addData(index.copy())
-
-            
-
         #ends recursion    
             return newindex
 
-    
     def permutations(self, numClusters, numNodes):
         # creates a list (numClusters by numClusters by numClusters ... (numNodes times) in numNodes dimesnions where each element is a 0
         shape = [numClusters] * numNodes
-
-        
-
         array = np.zeros(shape)
 
-        
-        
-        
-
-        
-
-        
-            
-       
-        
-
+ 
         #these lines create every permutation of the clusters the considered nodes could be and appends them to out
         
         self.iterate(array,[])
         
-            
-        
-
     def getData(self):
         self.permutations(self.numNode, self.numClusters)
-        
         return self.data
           
-          
-
 def GetNewPartitions(G, n, R, D, I, baseline):
     H = G
-
     #each array stores the nth lowest clustering coef node from each party cluster
-
-    
     FromR = R[:min(n, len(R))]
     FromD = D[:min(n, len(D))]
     FromI = I[:min(n, len(I))]
-
     Baseline = baseline
-
     AllNodes = FromR + FromD + FromI
     
     maxClust = 2+len(AllNodes)
     BestPartition = G
     for i in range(len(AllNodes)):
         H.nodes()[AllNodes[i]]["cluster"] = 3 + i
-        
-        
-
-   
     #(numClusters,numDimensions) 
     objectiv = getPermData(maxClust,len(AllNodes))
 
     Permutations = objectiv.getData()
-
-    
-
-   
-        
     for posib in Permutations:
-        
-        
+                
         countter = 0
-
-        
         for i in AllNodes:
             H.nodes()[i]["cluster"] = posib[countter]
             countter = countter + 1
         newMod = Modularity(H)
-        
-
         if (newMod > Baseline):
             
             Baseline = newMod
@@ -184,27 +111,6 @@ def GetNewPartitions(G, n, R, D, I, baseline):
 
 
     return(Baseline)
-
-    
-
-   
-
-    
-
-    
-
-    
-
-    
-
-
-
-    
-
-    
-
-   
-    
 
 def orderByClustCoef(G, nodes):
 
@@ -227,8 +133,6 @@ def orderByClustCoef(G, nodes):
             index = node
 
     newNodes.append(index)
-
-
 #if the output list isn't long enough we search for the node in nodes that has the smallest coef but isn't already in newNodes (append it once found)
 
     while (len(newNodes) < len(nodes)):
@@ -245,23 +149,15 @@ def orderByClustCoef(G, nodes):
     
     return (newNodes)   
                 
-        
-    
 #creates the tupple list needed to create nodes (important because of indexing my data for accessing later)  
 def makeTupleList(NodeList):
     tupleOut = []
-
-    
-
     i = 0
-
     for element in NodeList:
         tupleOut.append((i, element))
 
         i= i+1
     return tupleOut
-
-
 #finds the index of a node in the list of G's nodes
 def findNode(node, arr):
     for i in  range(len(arr)):
@@ -310,21 +206,12 @@ def makeEdges(G, data):
                 else:
                     G.add_edge(coIndex,SponsGraphIndex, weight = (1/len(cosponsorsIndex)))
                     
-
-
-            
-           
-            
-            
-    
-    
     print('done making edges')
 
 
 def makePartyClusters(G, R, D, I, data):
     party = {}
 
-    
     for bill in data:
         if (bill['sponsor'] == []):
             continue
@@ -335,11 +222,6 @@ def makePartyClusters(G, R, D, I, data):
 
             #if the node has a list associated with it, add the bill party to it
                 party[findNode(SponsNode, G.nodes())].append(bill['sponsor'][0]['party'])
-
-
-               
-                        
-                        
             except:
 
                 #otherwise associate a list with it
@@ -366,67 +248,38 @@ def makePartyClusters(G, R, D, I, data):
 #the only other possibility is that they are a democrat
             D.append(key)
         
-        
     print("done partitioning by party")
 
-
-
 def run(file, n, senate):
-
-    print(file)
+    
        #loads json data from specified file
 #change file name 
     file = open('mydata/' + file + '.json', "r")
-
-
-    
 
 
 #data is a list of dictionary objects that store bill data
     data = json.loads(file.read())
     file.close()
 
-
 #Removes the house bills so I am only looking at the senate (lines 14 - 27)
     unwanted = []
     for bill in data:
 
-
 #when analyzing the house use "== 'Senate'" otherwise use "== 'House'"
         if (bill['originChamber'] == senate):
             unwanted.append(bill)
-
-
-
     for i in range(len(unwanted)):
         data.remove(unwanted[i])
-    
-    
-    
-    
-
-    
 
     nodes = []
-    
     G = nx.DiGraph()
     
-
-
     #loops through each bill in data
     for bill in data:
-
-
-
-      
-
-
 
        #if there isn't a sponors listed the bill is ignored, otherwise a node is created if it is necessary
 
         try:
-
-           
             SponsObj = makeObj(bill['sponsor'][0])
             SponsObj['chamber'] = bill['originChamber']
             if (not(SponsObj in nodes)):
@@ -434,18 +287,6 @@ def run(file, n, senate):
         except:
 
             continue
-        
-        
-            
-       
-        
-
-        
-
-    
-
-
-
         
         #nodes are created for cosponsors if necessary
 
@@ -459,10 +300,6 @@ def run(file, n, senate):
                 
     print('done making nodes')
 
-    
-   
-
-
     #created nodes are added to G
 
     G.add_nodes_from(makeTupleList(nodes))
@@ -472,10 +309,6 @@ def run(file, n, senate):
 
     start = time.time()
 
-    
-
-    
-
 #Republican party nodes index
     Rep = []
 #democratic nodes
@@ -483,23 +316,15 @@ def run(file, n, senate):
 #independent
     Indep = []
 
-
 #populates Rep, Dem and Indep with appropriate node indexes
     makePartyClusters(G, Rep, Dem, Indep, data)
-
-
-        
 
 #orders the 3 cluster by local clustering coeffecient
     
     Rep = orderByClustCoef(G, Rep)
-
     Dem = orderByClustCoef(G, Dem)
-
     Indep = orderByClustCoef(G, Indep)
-    
     print('done ordering party clusters')
-
     
     for node in Rep:
         G.nodes()[node]["cluster"] = 2
@@ -514,13 +339,6 @@ def run(file, n, senate):
     print('done assigning cluster ID')
    
 
-    
-
-    
-    
-
-    
-
     print('running alg')
     ModNow = GetNewPartitions(G,n, Rep, Dem, Indep, atFirst)
 
@@ -529,31 +347,11 @@ def run(file, n, senate):
     print(((ModNow/atFirst) - 1)*100)
     print(end-start)
 
-
-
-
-
-
- 
-
 def main():
-
     window = tk.Tk()
-
     window.geometry("200x200")
-
-
-    
-
-
     fileOptions = ["108", "109", "110", "111", "112", "113", "114", "115", "116", "117"]
-
-    
-
     clicked = tk.StringVar()
-
-    
-
     clicked.set("108")
 
     def prt():
@@ -571,22 +369,6 @@ def main():
     button = tk.Button(window, text = "Run Code", command = (prt)).pack()
 
     window.mainloop()
-
-    
-
-    
-
- 
-
-
- 
-
- 
-    
-    
-   
-    
-
 
 if __name__=="__main__":
     main()
